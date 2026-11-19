@@ -1,0 +1,835 @@
+
+-- =========================================================
+-- RYKO HUB | AUTOJUMP + FRONTAL JUMP + HEX SETTINGS
+-- LocalScript | StarterPlayerScripts
+-- =========================================================
+
+local Players = game:GetService("Players")
+local UIS = game:GetService("UserInputService")
+local TweenService = game:GetService("TweenService")
+local RunService = game:GetService("RunService")
+
+local player = Players.LocalPlayer
+
+local gui = Instance.new("ScreenGui")
+gui.Name = "RYKO_HUB"
+gui.ResetOnSpawn = false
+gui.Parent = player:WaitForChild("PlayerGui")
+
+local RED = Color3.fromRGB(190, 48, 62)
+local BG = Color3.fromRGB(22, 17, 19)
+local CARD = Color3.fromRGB(48, 38, 40)
+local WHITE = Color3.fromRGB(245, 240, 240)
+local GRAY = Color3.fromRGB(170, 155, 158)
+
+local function make(class, props, parent)
+    local obj = Instance.new(class)
+    for k, v in pairs(props) do
+        obj[k] = v
+    end
+    obj.Parent = parent
+    return obj
+end
+
+local function round(obj, radius)
+    make("UICorner", {
+        CornerRadius = UDim.new(0, radius)
+    }, obj)
+end
+
+-- DRAG SYSTEM
+
+local function drag(object, handle)
+    local moving = false
+    local start
+    local original
+
+    handle.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.Touch
+        or input.UserInputType == Enum.UserInputType.MouseButton1 then
+            moving = true
+            start = input.Position
+            original = object.Position
+        end
+    end)
+
+    local moveConnection = UIS.InputChanged:Connect(function(input)
+        if moving and (
+            input.UserInputType == Enum.UserInputType.Touch
+            or input.UserInputType == Enum.UserInputType.MouseMovement
+        ) then
+            local delta = input.Position - start
+
+            object.Position = UDim2.new(
+                original.X.Scale,
+                original.X.Offset + delta.X,
+                original.Y.Scale,
+                original.Y.Offset + delta.Y
+            )
+        end
+    end)
+
+    UIS.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.Touch
+        or input.UserInputType == Enum.UserInputType.MouseButton1 then
+            moving = false
+        end
+    end)
+
+    return moveConnection
+end
+
+-- MAIN WINDOW
+
+local main = make("Frame", {
+    Size = UDim2.fromOffset(620, 440),
+    Position = UDim2.new(0.5, -310, 0.5, -220),
+    BackgroundColor3 = BG,
+    BorderSizePixel = 0
+}, gui)
+
+round(main, 16)
+
+-- HEADER
+
+local header = make("Frame", {
+    Size = UDim2.new(1, 0, 0, 65),
+    BackgroundColor3 = Color3.fromRGB(29, 20, 22),
+    BorderSizePixel = 0
+}, main)
+
+round(header, 16)
+
+local hubTitle = make("TextLabel", {
+    Position = UDim2.fromOffset(18, 10),
+    Size = UDim2.fromOffset(330, 45),
+    BackgroundTransparency = 1,
+    Text = "♛  RYKO HUB",
+    TextColor3 = RED,
+    TextSize = 24,
+    Font = Enum.Font.GothamBold,
+    TextXAlignment = Enum.TextXAlignment.Left
+}, header)
+
+local function headerButton(symbol, offset)
+    return make("TextButton", {
+        Position = UDim2.new(1, offset, 0, 12),
+        Size = UDim2.fromOffset(38, 38),
+        BackgroundTransparency = 1,
+        Text = symbol,
+        TextColor3 = RED,
+        TextSize = 23,
+        Font = Enum.Font.GothamBold
+    }, header)
+end
+
+local minimize = headerButton("−", -95)
+local close = headerButton("×", -48)
+
+-- SIDEBAR
+
+local sidebar = make("Frame", {
+    Position = UDim2.fromOffset(12, 78),
+    Size = UDim2.new(0, 145, 1, -90),
+    BackgroundTransparency = 1
+}, main)
+
+local content = make("Frame", {
+    Position = UDim2.fromOffset(170, 78),
+    Size = UDim2.new(1, -182, 1, -90),
+    BackgroundTransparency = 1
+}, main)
+
+local function nav(text, y)
+    local b = make("TextButton", {
+        Position = UDim2.fromOffset(0, y),
+        Size = UDim2.new(1, 0, 0, 43),
+        BackgroundColor3 = CARD,
+        BackgroundTransparency = 0.2,
+        Text = text,
+        TextColor3 = WHITE,
+        TextSize = 14,
+        Font = Enum.Font.GothamMedium
+    }, sidebar)
+
+    round(b, 9)
+    return b
+end
+
+local homeTab = nav("⌂   Home", 5)
+local mainTab = nav("▣   Main", 55)
+local settingsTab = nav("⚙   Settings", 105)
+
+-- AUTOJUMP CARD
+
+local card = make("Frame", {
+    Size = UDim2.new(1, 0, 0, 145),
+    BackgroundColor3 = CARD,
+    BorderSizePixel = 0
+}, content)
+
+round(card, 13)
+
+make("TextLabel", {
+    Position = UDim2.fromOffset(18, 12),
+    Size = UDim2.new(1, -35, 0, 35),
+    BackgroundTransparency = 1,
+    Text = "♧   MOVEMENT",
+    TextColor3 = WHITE,
+    TextSize = 17,
+    Font = Enum.Font.GothamBold,
+    TextXAlignment = Enum.TextXAlignment.Left
+}, card)
+
+make("TextLabel", {
+    Position = UDim2.fromOffset(20, 65),
+    Size = UDim2.new(1, -100, 0, 30),
+    BackgroundTransparency = 1,
+    Text = "AutoJump",
+    TextColor3 = WHITE,
+    TextSize = 16,
+    Font = Enum.Font.GothamMedium,
+    TextXAlignment = Enum.TextXAlignment.Left
+}, card)
+
+local toggle = make("TextButton", {
+    Position = UDim2.new(1, -65, 0, 68),
+    Size = UDim2.fromOffset(43, 24),
+    BackgroundColor3 = Color3.fromRGB(85, 76, 78),
+    Text = ""
+}, card)
+
+round(toggle, 20)
+
+local knob = make("Frame", {
+    Position = UDim2.fromOffset(3, 3),
+    Size = UDim2.fromOffset(18, 18),
+    BackgroundColor3 = WHITE
+}, toggle)
+
+round(knob, 20)
+
+local status = make("TextLabel", {
+    Position = UDim2.fromOffset(20, 105),
+    Size = UDim2.new(1, -35, 0, 22),
+    BackgroundTransparency = 1,
+    Text = "Status: OFF",
+    TextColor3 = GRAY,
+    TextSize = 12,
+    Font = Enum.Font.Gotham,
+    TextXAlignment = Enum.TextXAlignment.Left
+}, card)
+
+-- AUTOJUMP
+
+local enabled = false
+local connection
+local characterConnection
+
+local function bindCharacter(character)
+    if connection then
+        connection:Disconnect()
+        connection = nil
+    end
+
+    local humanoid = character:WaitForChild("Humanoid", 10)
+    if not humanoid then return end
+
+    local wasAirborne = false
+
+    connection = RunService.Heartbeat:Connect(function()
+        if not enabled or not humanoid.Parent then return end
+
+        local airborne =
+            humanoid.FloorMaterial == Enum.Material.Air
+
+        if airborne then
+            wasAirborne = true
+        elseif wasAirborne and humanoid.Health > 0 then
+            wasAirborne = false
+            humanoid.Jump = true
+        end
+    end)
+end
+
+if player.Character then
+    task.spawn(bindCharacter, player.Character)
+end
+
+characterConnection = player.CharacterAdded:Connect(bindCharacter)
+
+toggle.MouseButton1Click:Connect(function()
+    enabled = not enabled
+
+    TweenService:Create(toggle, TweenInfo.new(0.15), {
+        BackgroundColor3 = enabled and RED
+        or Color3.fromRGB(85, 76, 78)
+    }):Play()
+
+    TweenService:Create(knob, TweenInfo.new(0.15), {
+        Position = enabled
+        and UDim2.fromOffset(22, 3)
+        or UDim2.fromOffset(3, 3)
+    }):Play()
+
+    status.Text = enabled and "Status: ON" or "Status: OFF"
+end)
+
+-- FRONTAL JUMP OPTIONS CARD
+
+local frontalCard = make("Frame", {
+    Position = UDim2.fromOffset(0, 157),
+    Size = UDim2.new(1, 0, 0, 125),
+    BackgroundColor3 = CARD,
+    BorderSizePixel = 0
+}, content)
+
+round(frontalCard, 13)
+
+make("TextLabel", {
+    Position = UDim2.fromOffset(18, 10),
+    Size = UDim2.new(1, -35, 0, 30),
+    BackgroundTransparency = 1,
+    Text = "FRONTAL JUMP",
+    TextColor3 = WHITE,
+    TextSize = 17,
+    Font = Enum.Font.GothamBold,
+    TextXAlignment = Enum.TextXAlignment.Left
+}, frontalCard)
+
+local openFrontal = make("TextButton", {
+    Position = UDim2.fromOffset(15, 52),
+    Size = UDim2.new(0.5, -20, 0, 48),
+    BackgroundColor3 = RED,
+    Text = "FRONTAL JUMP",
+    TextColor3 = WHITE,
+    TextSize = 13,
+    Font = Enum.Font.GothamBold
+}, frontalCard)
+
+round(openFrontal, 9)
+
+local openFrontalButton = make("TextButton", {
+    Position = UDim2.new(0.5, 5, 0, 52),
+    Size = UDim2.new(0.5, -20, 0, 48),
+    BackgroundColor3 = BG,
+    Text = "FRONTAL JUMP BUTTON",
+    TextColor3 = WHITE,
+    TextSize = 11,
+    Font = Enum.Font.GothamBold
+}, frontalCard)
+
+round(openFrontalButton, 9)
+
+-- SECOND FRONTAL UI
+
+local frontalUI = make("Frame", {
+    Size = UDim2.fromOffset(330, 270),
+    Position = UDim2.new(0.5, -165, 0.5, -135),
+    BackgroundColor3 = BG,
+    BorderSizePixel = 0,
+    Visible = false
+}, gui)
+
+round(frontalUI, 15)
+
+local frontalHeader = make("Frame", {
+    Size = UDim2.new(1, 0, 0, 52),
+    BackgroundColor3 = Color3.fromRGB(29, 20, 22),
+    BorderSizePixel = 0
+}, frontalUI)
+
+round(frontalHeader, 15)
+
+local frontalTitle = make("TextLabel", {
+    Position = UDim2.fromOffset(14, 8),
+    Size = UDim2.new(1, -110, 0, 35),
+    BackgroundTransparency = 1,
+    Text = "♛ FRONTAL JUMP",
+    TextColor3 = RED,
+    TextSize = 16,
+    Font = Enum.Font.GothamBold,
+    TextXAlignment = Enum.TextXAlignment.Left
+}, frontalHeader)
+
+local frontalMinimize = make("TextButton", {
+    Position = UDim2.new(1, -85, 0, 8),
+    Size = UDim2.fromOffset(35, 35),
+    BackgroundTransparency = 1,
+    Text = "−",
+    TextColor3 = RED,
+    TextSize = 22,
+    Font = Enum.Font.GothamBold
+}, frontalHeader)
+
+local frontalClose = make("TextButton", {
+    Position = UDim2.new(1, -45, 0, 8),
+    Size = UDim2.fromOffset(35, 35),
+    BackgroundTransparency = 1,
+    Text = "×",
+    TextColor3 = RED,
+    TextSize = 22,
+    Font = Enum.Font.GothamBold
+}, frontalHeader)
+
+local frontalToggle = make("TextButton", {
+    Position = UDim2.fromOffset(15, 70),
+    Size = UDim2.new(1, -30, 0, 50),
+    BackgroundColor3 = RED,
+    Text = "FRONTAL JUMP: OFF",
+    TextColor3 = WHITE,
+    TextSize = 14,
+    Font = Enum.Font.GothamBold
+}, frontalUI)
+
+round(frontalToggle, 9)
+
+make("TextLabel", {
+    Position = UDim2.fromOffset(16, 135),
+    Size = UDim2.new(1, -32, 0, 25),
+    BackgroundTransparency = 1,
+    Text = "Forward Speed",
+    TextColor3 = WHITE,
+    TextSize = 14,
+    Font = Enum.Font.GothamMedium,
+    TextXAlignment = Enum.TextXAlignment.Left
+}, frontalUI)
+
+local frontalSpeed = 35
+
+local speedBox = make("TextBox", {
+    Position = UDim2.fromOffset(15, 168),
+    Size = UDim2.new(1, -30, 0, 40),
+    BackgroundColor3 = CARD,
+    Text = tostring(frontalSpeed),
+    PlaceholderText = "Speed (1-1000)",
+    TextColor3 = WHITE,
+    PlaceholderColor3 = GRAY,
+    TextSize = 14,
+    Font = Enum.Font.Gotham,
+    ClearTextOnFocus = false
+}, frontalUI)
+
+round(speedBox, 8)
+
+speedBox.FocusLost:Connect(function()
+    local value = tonumber(speedBox.Text)
+
+    if value then
+        frontalSpeed = math.clamp(value, 1, 1000)
+    end
+
+    speedBox.Text = tostring(frontalSpeed)
+end)
+
+-- FLOATING RESTORE BUTTON FOR SECOND UI
+
+local frontalBubble = make("TextButton", {
+    Size = UDim2.fromOffset(90, 45),
+    Position = UDim2.new(0.5, -45, 0.5, -22),
+    BackgroundColor3 = BG,
+    Text = "FRONTAL",
+    TextColor3 = RED,
+    TextSize = 14,
+    Font = Enum.Font.GothamBold,
+    Visible = false
+}, gui)
+
+round(frontalBubble, 12)
+
+-- FRONTAL MOVEMENT
+
+local frontalEnabled = false
+local frontalConnection
+local wasGrounded = false
+
+local function stopFrontal()
+    frontalEnabled = false
+
+    if frontalConnection then
+        frontalConnection:Disconnect()
+        frontalConnection = nil
+    end
+
+    frontalToggle.Text = "FRONTAL JUMP: OFF"
+    frontalToggle.BackgroundColor3 = RED
+end
+
+local function startFrontal()
+    stopFrontal()
+    frontalEnabled = true
+
+    local character = player.Character
+
+    if not character then
+        frontalEnabled = false
+        return
+    end
+
+    local humanoid = character:FindFirstChildOfClass("Humanoid")
+    local root = character:FindFirstChild("HumanoidRootPart")
+
+    if not humanoid or not root then
+        frontalEnabled = false
+        return
+    end
+
+    wasGrounded = humanoid.FloorMaterial ~= Enum.Material.Air
+
+    frontalConnection = RunService.Heartbeat:Connect(function()
+        if not frontalEnabled then return end
+
+        if not root.Parent or humanoid.Health <= 0 then
+            stopFrontal()
+            return
+        end
+
+        local camera = workspace.CurrentCamera
+        if not camera then return end
+
+        local look = camera.CFrame.LookVector
+        local forward = Vector3.new(look.X, 0, look.Z)
+
+        if forward.Magnitude > 0 then
+            forward = forward.Unit
+
+            local velocity = root.AssemblyLinearVelocity
+
+            root.AssemblyLinearVelocity = Vector3.new(
+                forward.X * frontalSpeed,
+                velocity.Y,
+                forward.Z * frontalSpeed
+            )
+        end
+
+        local grounded =
+            humanoid.FloorMaterial ~= Enum.Material.Air
+
+        if grounded and not wasGrounded then
+            humanoid.Jump = true
+        end
+
+        wasGrounded = grounded
+    end)
+
+    frontalToggle.Text = "FRONTAL JUMP: ON"
+    frontalToggle.BackgroundColor3 = Color3.fromRGB(45, 145, 85)
+end
+
+frontalToggle.MouseButton1Click:Connect(function()
+    if frontalEnabled then
+        stopFrontal()
+    else
+        startFrontal()
+    end
+end)
+
+-- OPEN SECOND UI
+
+openFrontal.MouseButton1Click:Connect(function()
+    frontalUI.Visible = true
+    frontalBubble.Visible = false
+end)
+
+openFrontalButton.MouseButton1Click:Connect(function()
+    frontalUI.Visible = true
+    frontalBubble.Visible = false
+end)
+
+-- MINIMIZE SECOND UI
+
+frontalMinimize.MouseButton1Click:Connect(function()
+    frontalUI.Visible = false
+    frontalBubble.Visible = true
+end)
+
+frontalBubble.MouseButton1Click:Connect(function()
+    frontalUI.Visible = true
+    frontalBubble.Visible = false
+end)
+
+-- CLOSE SECOND UI
+
+frontalClose.MouseButton1Click:Connect(function()
+    stopFrontal()
+    frontalUI.Visible = false
+    frontalBubble.Visible = false
+end)
+
+-- =========================================================
+-- SETTINGS | HEX COLOR PALETTE
+-- =========================================================
+
+local settingsPanel = make("Frame", {
+    Size = UDim2.new(1, 0, 0, 250),
+    BackgroundColor3 = CARD,
+    BorderSizePixel = 0,
+    Visible = false
+}, content)
+
+round(settingsPanel, 13)
+
+make("TextLabel", {
+    Position = UDim2.fromOffset(18, 12),
+    Size = UDim2.new(1, -35, 0, 30),
+    BackgroundTransparency = 1,
+    Text = "COLOR CUSTOMIZATION",
+    TextColor3 = WHITE,
+    TextSize = 17,
+    Font = Enum.Font.GothamBold,
+    TextXAlignment = Enum.TextXAlignment.Left
+}, settingsPanel)
+
+make("TextLabel", {
+    Position = UDim2.fromOffset(18, 53),
+    Size = UDim2.new(1, -35, 0, 22),
+    BackgroundTransparency = 1,
+    Text = "Enter a HEX color code:",
+    TextColor3 = GRAY,
+    TextSize = 13,
+    Font = Enum.Font.Gotham,
+    TextXAlignment = Enum.TextXAlignment.Left
+}, settingsPanel)
+
+local hexInput = make("TextBox", {
+    Position = UDim2.fromOffset(18, 83),
+    Size = UDim2.new(1, -36, 0, 42),
+    BackgroundColor3 = BG,
+    Text = "#BE303E",
+    PlaceholderText = "#FFFFFF",
+    TextColor3 = WHITE,
+    PlaceholderColor3 = GRAY,
+    TextSize = 15,
+    Font = Enum.Font.GothamBold,
+    ClearTextOnFocus = false
+}, settingsPanel)
+
+round(hexInput, 8)
+
+local colorPreview = make("Frame", {
+    Position = UDim2.fromOffset(18, 140),
+    Size = UDim2.fromOffset(42, 32),
+    BackgroundColor3 = RED,
+    BorderSizePixel = 0
+}, settingsPanel)
+
+round(colorPreview, 7)
+
+local previewLabel = make("TextLabel", {
+    Position = UDim2.fromOffset(70, 140),
+    Size = UDim2.new(1, -90, 0, 32),
+    BackgroundTransparency = 1,
+    Text = "Current: #BE303E",
+    TextColor3 = WHITE,
+    TextSize = 12,
+    Font = Enum.Font.Gotham,
+    TextXAlignment = Enum.TextXAlignment.Left
+}, settingsPanel)
+
+local applyColor = make("TextButton", {
+    Position = UDim2.fromOffset(18, 190),
+    Size = UDim2.new(1, -36, 0, 42),
+    BackgroundColor3 = RED,
+    Text = "APPLY COLOR",
+    TextColor3 = WHITE,
+    TextSize = 14,
+    Font = Enum.Font.GothamBold
+}, settingsPanel)
+
+round(applyColor, 8)
+
+local colorStatus = make("TextLabel", {
+    Position = UDim2.fromOffset(18, 233),
+    Size = UDim2.new(1, -36, 0, 17),
+    BackgroundTransparency = 1,
+    Text = "Ready to customize",
+    TextColor3 = GRAY,
+    TextSize = 11,
+    Font = Enum.Font.Gotham
+}, settingsPanel)
+
+local currentHex = "#BE303E"
+
+-- GLOBAL COLOR APPLICATION
+
+local function applyGlobalColor(hex)
+    hex = tostring(hex):gsub("%s+", "")
+
+    if hex:sub(1, 1) == "#" then
+        hex = hex:sub(2)
+    end
+
+    if not hex:match("^%x%x%x%x%x%x$") then
+        return false
+    end
+
+    local r = tonumber(hex:sub(1, 2), 16)
+    local g = tonumber(hex:sub(3, 4), 16)
+    local b = tonumber(hex:sub(5, 6), 16)
+
+    local newColor = Color3.fromRGB(r, g, b)
+
+    currentHex = "#" .. hex:upper()
+    RED = newColor
+
+    -- Main interface accents
+
+    hubTitle.TextColor3 = RED
+    minimize.TextColor3 = RED
+    close.TextColor3 = RED
+
+    openFrontal.BackgroundColor3 = RED
+
+    -- Secondary interface accents
+
+    frontalTitle.TextColor3 = RED
+    frontalMinimize.TextColor3 = RED
+    frontalClose.TextColor3 = RED
+
+    frontalBubble.TextColor3 = RED
+
+    -- Floating main button
+
+    bubble.TextColor3 = RED
+
+    -- Settings accents
+
+    applyColor.BackgroundColor3 = RED
+    colorPreview.BackgroundColor3 = RED
+
+    -- Preserve toggle states
+
+    if enabled then
+        toggle.BackgroundColor3 = RED
+    end
+
+    if not frontalEnabled then
+        frontalToggle.BackgroundColor3 = RED
+    end
+
+    -- Update preview and labels
+
+    hexInput.Text = currentHex
+    previewLabel.Text = "Current: " .. currentHex
+
+    return true
+end
+
+applyColor.MouseButton1Click:Connect(function()
+    if applyGlobalColor(hexInput.Text) then
+        colorStatus.Text = "Color applied successfully!"
+        colorStatus.TextColor3 = Color3.fromRGB(100, 210, 130)
+    else
+        colorStatus.Text = "Invalid HEX! Use #RRGGBB"
+        colorStatus.TextColor3 = Color3.fromRGB(255, 85, 85)
+    end
+end)
+
+-- LIVE HEX PREVIEW
+
+hexInput.FocusLost:Connect(function()
+    local hex = hexInput.Text:gsub("%s+", "")
+
+    if hex:sub(1, 1) == "#" then
+        hex = hex:sub(2)
+    end
+
+    if hex:match("^%x%x%x%x%x%x$") then
+        local r = tonumber(hex:sub(1, 2), 16)
+        local g = tonumber(hex:sub(3, 4), 16)
+        local b = tonumber(hex:sub(5, 6), 16)
+
+        colorPreview.BackgroundColor3 = Color3.fromRGB(r, g, b)
+        colorStatus.Text = "Preview ready. Press APPLY COLOR."
+        colorStatus.TextColor3 = GRAY
+    end
+end)
+
+-- NAVIGATION
+
+local function selectTab(selected)
+    for _, button in ipairs({homeTab, mainTab, settingsTab}) do
+        button.BackgroundTransparency = 0.2
+    end
+
+    selected.BackgroundTransparency = 0
+end
+
+local function showTab(tab)
+    selectTab(tab)
+
+    card.Visible = tab == mainTab
+    frontalCard.Visible = tab == mainTab
+    settingsPanel.Visible = tab == settingsTab
+
+    content.Visible = tab ~= homeTab
+end
+
+homeTab.MouseButton1Click:Connect(function()
+    showTab(homeTab)
+end)
+
+mainTab.MouseButton1Click:Connect(function()
+    showTab(mainTab)
+end)
+
+settingsTab.MouseButton1Click:Connect(function()
+    showTab(settingsTab)
+end)
+
+showTab(mainTab)
+
+-- FLOATING MAIN BUTTON
+
+local bubble = make("TextButton", {
+    Size = UDim2.fromOffset(55, 55),
+    Position = UDim2.new(0, 20, 0.5, 0),
+    BackgroundColor3 = BG,
+    Text = "⚔️",
+    TextColor3 = RED,
+    TextSize = 28,
+    Font = Enum.Font.GothamBold,
+    Visible = false
+}, gui)
+
+round(bubble, 30)
+
+-- DRAG CONNECTIONS
+
+drag(main, header)
+drag(bubble, bubble)
+drag(frontalUI, frontalHeader)
+drag(frontalBubble, frontalBubble)
+
+-- MINIMIZE MAIN
+
+minimize.MouseButton1Click:Connect(function()
+    main.Visible = false
+    bubble.Visible = true
+end)
+
+bubble.MouseButton1Click:Connect(function()
+    main.Visible = true
+    bubble.Visible = false
+end)
+
+-- CLOSE MAIN
+
+close.MouseButton1Click:Connect(function()
+    enabled = false
+    stopFrontal()
+
+    if connection then
+        connection:Disconnect()
+        connection = nil
+    end
+
+    if characterConnection then
+        characterConnection:Disconnect()
+        characterConnection = nil
+    end
+
+    gui:Destroy()
+end)
+
+print("[RYKO HUB] Loaded successfully!")
